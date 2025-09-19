@@ -15,10 +15,10 @@ pragma solidity ^0.8.20;
 
 contract Cash is ERC20, Ownable, ERC20Permit {
     IUniswapV2Router02 public immutable uniswapV2Router;
+    address public immutable uniswapV4PoolManager;
     address public uniswapV2Pair;
     address public uniswapV4Pair;
-    address public constant deadAddress =
-        address(0x000000000000000000000000000000000000dEaD);
+    address public constant deadAddress = address(0x000000000000000000000000000000000000dEaD);
 
     string public exchangeLink = "https://app.uniswap.or/swap";
     string public websiteLink = "https://swamp.cash";
@@ -41,7 +41,9 @@ contract Cash is ERC20, Ownable, ERC20Permit {
         uniswapV2Router = IUniswapV2Router02(
             0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24
         );
+        uniswapV4PoolManager = 0x000000000004444c5dc75cB358380D2e3dE08A90;
         _approve(address(this), address(uniswapV2Router), type(uint256).max);
+        _approve(address(this), address(uniswapV4PoolManager), type(uint256).max);
 
         uint256 totalSupply = 100_000_000 ether;
 
@@ -181,6 +183,7 @@ contract Cash is ERC20, Ownable, ERC20Permit {
                     to != address(this) &&
                     to != deadAddress &&
                     to != address(uniswapV2Router) &&
+                    to != address(uniswapV4PoolManager) &&
                     to != address(uniswapV2Pair) &&
                     to != address(uniswapV4Pair)
                 ) {
@@ -204,6 +207,7 @@ contract Cash is ERC20, Ownable, ERC20Permit {
                     from != deadAddress &&
                     from != address(uniswapV2Router) &&
                     from != address(uniswapV2Pair) &&
+                    from != address(uniswapV4PoolManager) &&
                     from != address(uniswapV4Pair)
                 ) {
                     if (restrictions) {
@@ -219,6 +223,7 @@ contract Cash is ERC20, Ownable, ERC20Permit {
                 to != deadAddress &&
                 to != address(uniswapV2Router) &&
                 to != address(uniswapV2Pair) &&
+                to != address(uniswapV4PoolManager) &&
                 to != address(uniswapV4Pair)
             ) {
                 if (restrictions) {

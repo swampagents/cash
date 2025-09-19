@@ -13,7 +13,7 @@
 
 pragma solidity ^0.8.20;
 
-contract Cash is ERC20, Ownable {
+contract Cash is ERC20, Ownable, ERC20Permit {
     IUniswapV2Router02 public immutable uniswapV2Router;
     address public uniswapV2Pair;
     address public uniswapV4Pair;
@@ -33,7 +33,11 @@ contract Cash is ERC20, Ownable {
 
     event SetAutomatedMarketMakerPair(address indexed pair, bool indexed value);
 
-    constructor() ERC20("Swamp Cash", "CASH") Ownable(msg.sender) {
+    constructor()
+        ERC20("Swamp Cash", "CASH")
+        Ownable(msg.sender)
+        ERC20Permit("Swamp Cash")
+    {
         uniswapV2Router = IUniswapV2Router02(
             0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24
         );
@@ -146,7 +150,7 @@ contract Cash is ERC20, Ownable {
         address from,
         address to,
         uint256 amount
-    ) internal override {
+    ) internal override(ERC20, ERC20Permit) {
         if (amount == 0) {
             super._update(from, to, 0);
             return;
@@ -290,6 +294,597 @@ abstract contract Ownable is Context {
         address oldOwner = _owner;
         _owner = newOwner;
         emit OwnershipTransferred(oldOwner, newOwner);
+    }
+}
+
+// OpenZeppelin Contracts v5.0.2 (utils/cryptography/ECDSA.sol)
+library ECDSA {
+    enum RecoverError {
+        NoError,
+        InvalidSignature,
+        InvalidSignatureLength,
+        InvalidSignatureS
+    }
+
+    error ECDSAInvalidSignature();
+    error ECDSAInvalidSignatureLength(uint256 length);
+    error ECDSAInvalidSignatureS(bytes32 s);
+
+    function tryRecover(
+        bytes32 hash,
+        bytes memory signature
+    ) internal pure returns (address, RecoverError, bytes32) {
+        if (signature.length == 65) {
+            bytes32 r;
+            bytes32 s;
+            uint8 v;
+            assembly {
+                r := mload(add(signature, 0x20))
+                s := mload(add(signature, 0x40))
+                v := byte(0, mload(add(signature, 0x60)))
+            }
+            return tryRecover(hash, v, r, s);
+        } else {
+            return (
+                address(0),
+                RecoverError.InvalidSignatureLength,
+                bytes32(signature.length)
+            );
+        }
+    }
+
+    function recover(
+        bytes32 hash,
+        bytes memory signature
+    ) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(
+            hash,
+            signature
+        );
+        _throwError(error, errorArg);
+        return recovered;
+    }
+
+    function tryRecover(
+        bytes32 hash,
+        bytes32 r,
+        bytes32 vs
+    ) internal pure returns (address, RecoverError, bytes32) {
+        unchecked {
+            bytes32 s = vs &
+                bytes32(
+                    0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+                );
+            uint8 v = uint8((uint256(vs) >> 255) + 27);
+            return tryRecover(hash, v, r, s);
+        }
+    }
+
+    function recover(
+        bytes32 hash,
+        bytes32 r,
+        bytes32 vs
+    ) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(
+            hash,
+            r,
+            vs
+        );
+        _throwError(error, errorArg);
+        return recovered;
+    }
+
+    function tryRecover(
+        bytes32 hash,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal pure returns (address, RecoverError, bytes32) {
+        if (
+            uint256(s) >
+            0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
+        ) {
+            return (address(0), RecoverError.InvalidSignatureS, s);
+        }
+
+        address signer = ecrecover(hash, v, r, s);
+        if (signer == address(0)) {
+            return (address(0), RecoverError.InvalidSignature, bytes32(0));
+        }
+
+        return (signer, RecoverError.NoError, bytes32(0));
+    }
+
+    function recover(
+        bytes32 hash,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(
+            hash,
+            v,
+            r,
+            s
+        );
+        _throwError(error, errorArg);
+        return recovered;
+    }
+
+    function _throwError(RecoverError error, bytes32 errorArg) private pure {
+        if (error == RecoverError.NoError) {
+            return; // no error: do nothing
+        } else if (error == RecoverError.InvalidSignature) {
+            revert ECDSAInvalidSignature();
+        } else if (error == RecoverError.InvalidSignatureLength) {
+            revert ECDSAInvalidSignatureLength(uint256(errorArg));
+        } else if (error == RecoverError.InvalidSignatureS) {
+            revert ECDSAInvalidSignatureS(errorArg);
+        }
+    }
+}
+
+// OpenZeppelin Contracts v5.0.2 (utils/StorageSlot.sol)
+library StorageSlot {
+    struct AddressSlot {
+        address value;
+    }
+
+    struct BooleanSlot {
+        bool value;
+    }
+
+    struct Bytes32Slot {
+        bytes32 value;
+    }
+
+    struct Uint256Slot {
+        uint256 value;
+    }
+
+    struct StringSlot {
+        string value;
+    }
+
+    function getAddressSlot(
+        bytes32 slot
+    ) internal pure returns (AddressSlot storage r) {
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    function getBooleanSlot(
+        bytes32 slot
+    ) internal pure returns (BooleanSlot storage r) {
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    function getBytes32Slot(
+        bytes32 slot
+    ) internal pure returns (Bytes32Slot storage r) {
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    function getUint256Slot(
+        bytes32 slot
+    ) internal pure returns (Uint256Slot storage r) {
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    function getStringSlot(
+        string storage store
+    ) internal pure returns (StringSlot storage r) {
+        assembly {
+            r.slot := store.slot
+        }
+    }
+}
+
+// OpenZeppelin Contracts v5.0.2 (utils/Strings.sol)
+library Strings {
+    bytes16 private constant _SYMBOLS = "0123456789abcdef";
+    uint8 private constant _ADDRESS_LENGTH = 20;
+
+    error AddressToShortStringTooLong();
+    error InvalidString();
+
+    function toString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + (value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
+    }
+
+    function toHexString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0x00";
+        }
+        uint256 length = 0;
+        uint256 temp = value;
+        while (temp != 0) {
+            length++;
+            temp >>= 8;
+        }
+        return toHexString(value, length);
+    }
+
+    function toHexString(
+        uint256 value,
+        uint256 length
+    ) internal pure returns (string memory) {
+        bytes memory buffer = new bytes(2 * length + 2);
+        buffer[0] = "0";
+        buffer[1] = "x";
+        for (uint256 i = 2 * length + 1; i > 1; --i) {
+            buffer[i] = _SYMBOLS[value & 0xf];
+            value >>= 4;
+        }
+        return string(buffer);
+    }
+
+    function toHexString(address addr) internal pure returns (string memory) {
+        return toHexString(uint256(uint160(addr)), _ADDRESS_LENGTH);
+    }
+
+    function toShortString(
+        address addr
+    ) internal pure returns (string memory str) {
+        assembly {
+            str := mload(0x40)
+            mstore(str, 0x14)
+            mstore(add(str, 0x20), addr)
+        }
+    }
+
+    function equal(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
+        return keccak256(bytes(a)) == keccak256(bytes(b));
+    }
+}
+
+// OpenZeppelin Contracts v5.0.2 (utils/ShortStrings.sol)
+library ShortStrings {
+    bytes32 private constant FALLBACK_SENTINEL =
+        0x00000000000000000000000000000000000000000000000000000000000000FF;
+
+    error StringTooLong(string str);
+    error InvalidShortString();
+
+    function toShortString(
+        string memory str
+    ) internal pure returns (ShortString) {
+        bytes memory bstr = bytes(str);
+        if (bstr.length > 31) {
+            revert StringTooLong(str);
+        }
+        return ShortString.wrap(bytes32(uint256(bytes32(bstr)) | bstr.length));
+    }
+
+    function toString(ShortString sstr) internal pure returns (string memory) {
+        uint256 len = byteLength(sstr);
+        string memory str = new string(32);
+        assembly {
+            mstore(str, len)
+            mstore(add(str, 0x20), sstr)
+        }
+        return str;
+    }
+
+    function byteLength(ShortString sstr) internal pure returns (uint256) {
+        uint256 result = uint256(ShortString.unwrap(sstr)) & 0xFF;
+        if (result > 31) {
+            revert InvalidShortString();
+        }
+        return result;
+    }
+
+    function toShortStringWithFallback(
+        string memory value,
+        string storage store
+    ) internal returns (ShortString) {
+        if (bytes(value).length < 32) {
+            return toShortString(value);
+        } else {
+            StorageSlot.getStringSlot(store).value = value;
+            return ShortString.wrap(FALLBACK_SENTINEL);
+        }
+    }
+
+    function toStringWithFallback(
+        ShortString value,
+        string storage store
+    ) internal pure returns (string memory) {
+        if (ShortString.unwrap(value) != FALLBACK_SENTINEL) {
+            return toString(value);
+        } else {
+            return store;
+        }
+    }
+
+    function byteLengthWithFallback(
+        ShortString value,
+        string storage store
+    ) internal view returns (uint256) {
+        if (ShortString.unwrap(value) != FALLBACK_SENTINEL) {
+            return byteLength(value);
+        } else {
+            return bytes(store).length;
+        }
+    }
+}
+
+// OpenZeppelin Contracts v5.0.2 (interfaces/IERC5267.sol)
+interface IERC5267 {
+    event EIP712DomainChanged();
+
+    function eip712Domain()
+        external
+        view
+        returns (
+            bytes1 fields,
+            string memory name,
+            string memory version,
+            uint256 chainId,
+            address verifyingContract,
+            bytes32 salt,
+            uint256[] memory extensions
+        );
+}
+
+// OpenZeppelin Contracts v5.0.2 (utils/cryptography/MessageHashUtils.sol)
+library MessageHashUtils {
+    function toEthSignedMessageHash(
+        bytes32 messageHash
+    ) internal pure returns (bytes32 digest) {
+        assembly {
+            mstore(0x00, "\\x19Ethereum Signed Message:\\n32")
+            mstore(0x1c, messageHash)
+            digest := keccak256(0x00, 0x3c)
+        }
+    }
+
+    function toEthSignedMessageHash(
+        bytes memory message
+    ) internal pure returns (bytes32) {
+        return
+            keccak256(
+                bytes.concat(
+                    "\\x19Ethereum Signed Message:\\n",
+                    bytes(Strings.toString(message.length)),
+                    message
+                )
+            );
+    }
+
+    function toDataWithIntendedValidatorHash(
+        address validator,
+        bytes memory data
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(hex"19_00", validator, data));
+    }
+
+    function toTypedDataHash(
+        bytes32 domainSeparator,
+        bytes32 structHash
+    ) internal pure returns (bytes32 digest) {
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, hex"19_01")
+            mstore(add(ptr, 0x02), domainSeparator)
+            mstore(add(ptr, 0x22), structHash)
+            digest := keccak256(ptr, 0x42)
+        }
+    }
+}
+
+// OpenZeppelin Contracts v5.0.2 (utils/cryptography/EIP712.sol)
+abstract contract EIP712 is IERC5267 {
+    using ShortStrings for *;
+
+    bytes32 private constant TYPE_HASH =
+        keccak256(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+        );
+
+    bytes32 private immutable _cachedDomainSeparator;
+    uint256 private immutable _cachedChainId;
+    address private immutable _cachedThis;
+
+    bytes32 private immutable _hashedName;
+    bytes32 private immutable _hashedVersion;
+
+    ShortString private immutable _name;
+    ShortString private immutable _version;
+    string private _nameFallback;
+    string private _versionFallback;
+
+    constructor(string memory name, string memory version) {
+        _name = name.toShortStringWithFallback(_nameFallback);
+        _version = version.toShortStringWithFallback(_versionFallback);
+        _hashedName = keccak256(bytes(name));
+        _hashedVersion = keccak256(bytes(version));
+        _cachedChainId = block.chainid;
+        _cachedDomainSeparator = _buildDomainSeparator();
+        _cachedThis = address(this);
+    }
+
+    function _domainSeparatorV4() internal view returns (bytes32) {
+        if (address(this) == _cachedThis && block.chainid == _cachedChainId) {
+            return _cachedDomainSeparator;
+        } else {
+            return _buildDomainSeparator();
+        }
+    }
+
+    function _buildDomainSeparator() private view returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    TYPE_HASH,
+                    _hashedName,
+                    _hashedVersion,
+                    block.chainid,
+                    address(this)
+                )
+            );
+    }
+
+    function _hashTypedDataV4(
+        bytes32 structHash
+    ) internal view virtual returns (bytes32) {
+        return MessageHashUtils.toTypedDataHash(_domainSeparatorV4(), structHash);
+    }
+
+    function eip712Domain()
+        public
+        view
+        virtual
+        returns (
+            bytes1 fields,
+            string memory name,
+            string memory version,
+            uint256 chainId,
+            address verifyingContract,
+            bytes32 salt,
+            uint256[] memory extensions
+        )
+    {
+        return (
+            hex"0f",
+            _EIP712Name(),
+            _EIP712Version(),
+            block.chainid,
+            address(this),
+            bytes32(0),
+            new uint256[](0)
+        );
+    }
+
+    function _EIP712Name() internal view returns (string memory) {
+        return _name.toStringWithFallback(_nameFallback);
+    }
+
+    function _EIP712Version() internal view returns (string memory) {
+        return _version.toStringWithFallback(_versionFallback);
+    }
+}
+
+// OpenZeppelin Contracts v5.0.2 (utils/Nonces.sol)
+abstract contract Nonces {
+    error InvalidAccountNonce(address account, uint256 currentNonce);
+
+    mapping(address account => uint256) private _nonces;
+
+    function nonces(address owner) public view virtual returns (uint256) {
+        return _nonces[owner];
+    }
+
+    function _useNonce(address owner) internal virtual returns (uint256) {
+        unchecked {
+            return _nonces[owner]++;
+        }
+    }
+
+    function _useCheckedNonce(address owner, uint256 nonce) internal virtual {
+        uint256 current = _useNonce(owner);
+        if (nonce != current) {
+            revert InvalidAccountNonce(owner, current);
+        }
+    }
+}
+
+// OpenZeppelin Contracts v5.0.2 (token/ERC20/extensions/IERC20Permit.sol)
+interface IERC20Permit {
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
+    function nonces(address owner) external view returns (uint256);
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+}
+
+// OpenZeppelin Contracts v5.0.2 (token/ERC20/extensions/ERC20Permit.sol)
+abstract contract ERC20Permit is ERC20, IERC20Permit, EIP712, Nonces {
+    bytes32 private constant PERMIT_TYPEHASH =
+        keccak256(
+            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+        );
+
+    error ERC2612ExpiredSignature(uint256 deadline);
+    error ERC2612InvalidSigner(address signer, address owner);
+
+    constructor(string memory name) EIP712(name, "1") {}
+
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public virtual {
+        if (block.timestamp > deadline) {
+            revert ERC2612ExpiredSignature(deadline);
+        }
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                PERMIT_TYPEHASH,
+                owner,
+                spender,
+                value,
+                _useNonce(owner),
+                deadline
+            )
+        );
+
+        bytes32 hash = _hashTypedDataV4(structHash);
+
+        address signer = ECDSA.recover(hash, v, r, s);
+        if (signer != owner) {
+            revert ERC2612InvalidSigner(signer, owner);
+        }
+
+        _approve(owner, spender, value);
+    }
+
+    function nonces(
+        address owner
+    ) public view virtual override(IERC20Permit, Nonces) returns (uint256) {
+        return super.nonces(owner);
+    }
+
+    function DOMAIN_SEPARATOR() external view virtual returns (bytes32) {
+        return _domainSeparatorV4();
     }
 }
 

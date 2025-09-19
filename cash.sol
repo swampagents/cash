@@ -1,13 +1,16 @@
 /**
  *
  *
-   Contract features:
-   100,000,000 tokens
-   3% buy tax in ETH sent to community, marketing & developer
-   16% launch sell tax in ETH sent to community, marketing, & developer
-   Function to reduce taxes to 3/3
-   Function to remove taxes
-   Removable anti-whale restrictions of max transaction & max wallet
+    Swamp Cash ($CASH) on eth
+    https://swamp.cash
+
+    Contract features:
+    100,000,000 tokens
+    3% buy tax in ETH sent to community, marketing & developer
+    16% launch sell tax in ETH sent to community, marketing, & developer
+    Function to reduce taxes to 3/3
+    Function to remove taxes
+    Removable anti-whale restrictions of max transaction & max wallet
  */
 
 // SPDX-License-Identifier: MIT
@@ -1041,7 +1044,7 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
     ) external;
 }
 
-contract Tuesday is ERC20, Ownable {
+contract Cash is ERC20, Ownable {
     using SafeMath for uint256;
 
     IUniswapV2Router02 public immutable uniswapV2Router;
@@ -1050,7 +1053,7 @@ contract Tuesday is ERC20, Ownable {
         address(0x000000000000000000000000000000000000dEaD);
 
     string public exchangeLink = "https://app.uniswap.or/swap";
-    string public websiteLink = "https://DrewRoberts.com";
+    string public websiteLink = "https://swamp.cash";
 
     address public communityWallet;
     address public marketingWallet;
@@ -1104,7 +1107,7 @@ contract Tuesday is ERC20, Ownable {
         address indexed oldWallet
     );
 
-    constructor() ERC20("Tuesday", "TUES") {
+    constructor() ERC20("Swamp Cash", "CASH") {
         uniswapV2Router = IUniswapV2Router02(
             0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24
         );

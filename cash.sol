@@ -106,8 +106,9 @@ contract Cash is ERC20, Ownable, ERC20Permit {
     /**
      * @dev Updates the uniswapV4Pair string with a new value
      */
-    function updateuniswapV4Pair(string calldata v4Pair) external onlyOwner {
-        uniswapV4Pair = v4Pair;
+    function updateuniswapV4Pair(address _v4Pair) external onlyOwner {
+        require(_v4Pair != address(0), "Cannot set V4 pair to the zero address");
+        uniswapV4Pair = _v4Pair;
     }
 
     /**
@@ -180,7 +181,8 @@ contract Cash is ERC20, Ownable, ERC20Permit {
                     to != address(this) &&
                     to != deadAddress &&
                     to != address(uniswapV2Router) &&
-                    to != address(uniswapV2Pair)
+                    to != address(uniswapV2Pair) &&
+                    to != address(uniswapV4Pair)
                 ) {
                     if (restrictions) {
                         require(
@@ -201,7 +203,8 @@ contract Cash is ERC20, Ownable, ERC20Permit {
                     from != address(this) &&
                     from != deadAddress &&
                     from != address(uniswapV2Router) &&
-                    from != address(uniswapV2Pair)
+                    from != address(uniswapV2Pair) &&
+                    from != address(uniswapV4Pair)
                 ) {
                     if (restrictions) {
                         require(
@@ -215,7 +218,8 @@ contract Cash is ERC20, Ownable, ERC20Permit {
                 to != address(this) &&
                 to != deadAddress &&
                 to != address(uniswapV2Router) &&
-                to != address(uniswapV2Pair)
+                to != address(uniswapV2Pair) &&
+                to != address(uniswapV4Pair)
             ) {
                 if (restrictions) {
                     require(

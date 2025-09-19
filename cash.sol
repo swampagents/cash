@@ -16,19 +16,6 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
-
-// pragma solidity ^0.8.0;
-
-/**
- * @dev Provides information about the current execution context, including the
- * sender of the transaction and its data. While these are generally available
- * via msg.sender and msg.data, they should not be accessed in such a direct
- * manner, since when dealing with meta-transactions the account sending and
- * paying for execution may not be the actual sender (as far as an application
- * is concerned).
- *
- * This contract is only required for intermediate, library-like contracts.
- */
 abstract contract Context {
     function _msgSender() internal view virtual returns (address) {
         return msg.sender;
@@ -41,22 +28,9 @@ abstract contract Context {
 
 // OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)
 
-// pragma solidity ^0.8.0;
+
 
 // import "../utils/Context.sol";
-
-/**
- * @dev Contract module which provides a basic access control mechanism, where
- * there is an account (an owner) that can be granted exclusive access to
- * specific functions.
- *
- * By default, the owner account will be the one that deploys the contract. This
- * can later be changed with {transferOwnership}.
- *
- * This module is used through inheritance. It will make available the modifier
- * `onlyOwner`, which can be applied to your functions to restrict their use to
- * the owner.
- */
 abstract contract Ownable is Context {
     address private _owner;
 
@@ -129,12 +103,6 @@ abstract contract Ownable is Context {
 }
 
 // OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)
-
-// pragma solidity ^0.8.0;
-
-/**
- * @dev Interface of the ERC20 standard as defined in the EIP.
- */
 interface IERC20 {
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
@@ -218,16 +186,6 @@ interface IERC20 {
 }
 
 // OpenZeppelin Contracts v4.4.1 (token/ERC20/extensions/IERC20Metadata.sol)
-
-// pragma solidity ^0.8.0;
-
-// import "../IERC20.sol";
-
-/**
- * @dev Interface for the optional metadata functions from the ERC20 standard.
- *
- * _Available since v4.1._
- */
 interface IERC20Metadata is IERC20 {
     /**
      * @dev Returns the name of the token.
@@ -246,41 +204,6 @@ interface IERC20Metadata is IERC20 {
 }
 
 // OpenZeppelin Contracts (last updated v4.8.0) (token/ERC20/ERC20.sol)
-
-// pragma solidity ^0.8.0;
-
-// import "./IERC20.sol";
-// import "./extensions/IERC20Metadata.sol";
-// import "../../utils/Context.sol";
-
-/**
- * @dev Implementation of the {IERC20} interface.
- *
- * This implementation is agnostic to the way tokens are created. This means
- * that a supply mechanism has to be added in a derived contract using {_mint}.
- * For a generic mechanism see {ERC20PresetMinterPauser}.
- *
- * TIP: For a detailed writeup see our guide
- * https://forum.openzeppelin.com/t/how-to-implement-erc20-supply-mechanisms/226[How
- * to implement supply mechanisms].
- *
- * The default value of {decimals} is 18. To change this, you should override
- * this function so it returns a different value.
- *
- * We have followed general OpenZeppelin Contracts guidelines: functions revert
- * instead returning `false` on failure. This behavior is nonetheless
- * conventional and does not conflict with the expectations of ERC20
- * applications.
- *
- * Additionally, an {Approval} event is emitted on calls to {transferFrom}.
- * This allows applications to reconstruct the allowance for all accounts just
- * by listening to said events. Other implementations of the EIP may not emit
- * these events, as it isn't required by the specification.
- *
- * Finally, the non-standard {decreaseAllowance} and {increaseAllowance}
- * functions have been added to mitigate the well-known issues around setting
- * allowances. See {IERC20-approve}.
- */
 contract ERC20 is Context, IERC20, IERC20Metadata {
     mapping(address => uint256) private _balances;
 
@@ -660,19 +583,6 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
 }
 
 // OpenZeppelin Contracts (last updated v4.6.0) (utils/math/SafeMath.sol)
-
-// pragma solidity ^0.8.0;
-
-// CAUTION
-// This version of SafeMath should only be used with Solidity 0.8 or later,
-// because it relies on the compiler's built in overflow checks.
-
-/**
- * @dev Wrappers over Solidity's arithmetic operations.
- *
- * NOTE: `SafeMath` is generally not needed starting with Solidity 0.8, since the compiler
- * now has built in overflow checking.
- */
 library SafeMath {
     /**
      * @dev Returns the addition of two unsigned integers, with an overflow flag.
@@ -901,7 +811,6 @@ library SafeMath {
     }
 }
 
-// pragma solidity >=0.5.0;
 
 interface IUniswapV2Factory {
     event PairCreated(
@@ -935,7 +844,6 @@ interface IUniswapV2Factory {
 }
 
 // pragma solidity >=0.6.2;
-
 interface IUniswapV2Router01 {
     function factory() external pure returns (address);
 
@@ -1085,10 +993,7 @@ interface IUniswapV2Router01 {
     ) external view returns (uint256[] memory amounts);
 }
 
-// pragma solidity >=0.6.2;
-
 // import './IUniswapV2Router01.sol';
-
 interface IUniswapV2Router02 is IUniswapV2Router01 {
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,

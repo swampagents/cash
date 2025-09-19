@@ -319,7 +319,7 @@ interface IUniswapV2Factory {
     function setFeeToSetter(address) external;
 }
 
-// pragma solidity >=0.6.2;
+// Uniswap Contracts v2 (contracts/IUniswapV2Router01.sol)
 interface IUniswapV2Router01 {
     function factory() external pure returns (address);
 
@@ -469,7 +469,7 @@ interface IUniswapV2Router01 {
     ) external view returns (uint256[] memory amounts);
 }
 
-// import './IUniswapV2Router01.sol';
+// Uniswap Contracts v2 (contracts/IUniswapV2Router02.sol)
 interface IUniswapV2Router02 is IUniswapV2Router01 {
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,

@@ -15,8 +15,10 @@ pragma solidity ^0.8.20;
 
 contract Cash is ERC20, Ownable, ERC20Permit {
     IUniswapV2Router02 public immutable uniswapV2Router;
+    ISwapRouter public immutable uniswapV3Router;
     address public immutable uniswapV4PoolManager;
     address public uniswapV2Pair;
+    address public uniswapV3Pair;
     address public uniswapV4Pair;
     address public constant deadAddress = address(0x000000000000000000000000000000000000dEaD);
 
@@ -41,8 +43,10 @@ contract Cash is ERC20, Ownable, ERC20Permit {
         uniswapV2Router = IUniswapV2Router02(
             0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24
         );
+        uniswapV3Router = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
         uniswapV4PoolManager = 0x000000000004444c5dc75cB358380D2e3dE08A90;
         _approve(address(this), address(uniswapV2Router), type(uint256).max);
+        _approve(address(this), address(uniswapV3Router), type(uint256).max);
         _approve(address(this), address(uniswapV4PoolManager), type(uint256).max);
 
         uint256 totalSupply = 100_000_000 ether;
@@ -103,6 +107,14 @@ contract Cash is ERC20, Ownable, ERC20Permit {
      */
     function updateWebsiteLink(string calldata newLink) external onlyOwner {
         websiteLink = newLink;
+    }
+
+    /**
+     * @dev Updates the uniswapV3Pair string with a new value
+     */
+    function updateuniswapV3Pair(address _v3Pair) external onlyOwner {
+        require(_v3Pair != address(0), "Cannot set V3 pair to the zero address");
+        uniswapV3Pair = _v3Pair;
     }
 
     /**
@@ -183,8 +195,10 @@ contract Cash is ERC20, Ownable, ERC20Permit {
                     to != address(this) &&
                     to != deadAddress &&
                     to != address(uniswapV2Router) &&
+                    to != address(uniswapV3Router) &&
                     to != address(uniswapV4PoolManager) &&
                     to != address(uniswapV2Pair) &&
+                    to != address(uniswapV3Pair) &&
                     to != address(uniswapV4Pair)
                 ) {
                     if (restrictions) {
@@ -206,8 +220,10 @@ contract Cash is ERC20, Ownable, ERC20Permit {
                     from != address(this) &&
                     from != deadAddress &&
                     from != address(uniswapV2Router) &&
-                    from != address(uniswapV2Pair) &&
+                    from != address(uniswapV3Router) &&
                     from != address(uniswapV4PoolManager) &&
+                    from != address(uniswapV2Pair) &&
+                    from != address(uniswapV3Pair) &&
                     from != address(uniswapV4Pair)
                 ) {
                     if (restrictions) {
@@ -222,8 +238,10 @@ contract Cash is ERC20, Ownable, ERC20Permit {
                 to != address(this) &&
                 to != deadAddress &&
                 to != address(uniswapV2Router) &&
-                to != address(uniswapV2Pair) &&
+                to != address(uniswapV3Router) &&
                 to != address(uniswapV4PoolManager) &&
+                to != address(uniswapV2Pair) &&
+                to != address(uniswapV3Pair) &&
                 to != address(uniswapV4Pair)
             ) {
                 if (restrictions) {
@@ -1328,4 +1346,8 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
         address to,
         uint256 deadline
     ) external;
+}
+
+interface ISwapRouter is IUniswapV2Router02 {
+    // Uniswap V3 specific functions can be added here if needed
 }

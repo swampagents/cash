@@ -45,8 +45,8 @@ contract Cash is ERC20, Ownable, ERC20Permit {
 
         uint256 totalSupply = 100_000_000 ether;
 
-        restrictMaxTransaction = totalSupply / 100; // 1% of total supply (1,000,000 tokens)
-        restrictMaxWallet = totalSupply / 20; // 5% of total supply (5,000,000 tokens)
+        restrictMaxTransaction = totalSupply / 1000; // 0.1% of total supply (100,000 tokens)
+        restrictMaxWallet = totalSupply / 50; // 2% of total supply (2,000,000 tokens)
 
         _mint(address(this), totalSupply);
 

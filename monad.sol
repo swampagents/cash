@@ -13,251 +13,6 @@
 
 pragma solidity ^0.8.20;
 
-contract Cash is ERC20, Ownable, ERC20Permit {
-    IUniswapV2Router02 public immutable uniswapV2Router;
-    ISwapRouter public immutable uniswapV3Router;
-    address public immutable uniswapV4PoolManager;
-    address public uniswapV2Pair;
-    address public uniswapV3Pair;
-    address public uniswapV4Pair;
-    address public constant deadAddress = address(0x000000000000000000000000000000000000dEaD);
-
-    string public exchangeLink = "https://app.uniswap.org/swap";
-    string public websiteLink = "https://swamp.cash";
-
-    bool public tradable = false;
-
-    bool public restrictions = true;
-    uint256 public restrictMaxTransaction;
-    uint256 public restrictMaxWallet;
-
-    mapping(address => bool) private automatedMarketMakerPairs;
-
-    event SetAutomatedMarketMakerPair(address indexed pair, bool indexed value);
-
-    constructor()
-        ERC20("Swamp Cash", "CASH")
-        Ownable(msg.sender)
-        ERC20Permit("Swamp Cash")
-    {
-        uniswapV2Router = IUniswapV2Router02(
-            0x0d97dc33264bfc1c226207428a79b26757fb9dc3
-        );
-        uniswapV3Router = 0x0d97dc33264bfc1c226207428a79b26757fb9dc3;
-        uniswapV4PoolManager = 0x0d97dc33264bfc1c226207428a79b26757fb9dc3;
-        _approve(address(this), address(uniswapV2Router), type(uint256).max);
-        _approve(address(this), address(uniswapV3Router), type(uint256).max);
-        _approve(address(this), address(uniswapV4PoolManager), type(uint256).max);
-
-        uint256 totalSupply = 100_000_000 ether;
-
-        restrictMaxTransaction = totalSupply / 1000; // 0.1% of total supply (100,000 tokens)
-        restrictMaxWallet = totalSupply / 50; // 2% of total supply (2,000,000 tokens)
-
-        _mint(address(this), totalSupply);
-
-        uniswapV2Pair = IUniswapV2Factory(uniswapV2Router.factory()).createPair(
-            address(this),
-            uniswapV2Router.WETH()
-        );
-        _approve(address(this), address(uniswapV2Pair), type(uint256).max);
-        IERC20(uniswapV2Pair).approve(
-            address(uniswapV2Router),
-            type(uint256).max
-        );
-
-        _setAutomatedMarketMakerPair(address(uniswapV2Pair), true);
-    }
-
-    receive() external payable {}
-
-    /**
-     * @dev Enables trading, creates a uniswap pair and adds liquidity using the tokens in the contract.
-     *
-     * sets tradable to true, it can never be set to false after that
-     * stores uniswap pair address in uniswapV2Pair
-     */
-    function enableTrading() external onlyOwner {
-        require(!tradable, "Trading already enabled.");
-
-        uint256 tokensInWallet = balanceOf(address(this));
-        uint256 tokensToAdd = (tokensInWallet * 100) / 100; // 100% of tokens in contract go to Liquidity Pool to be paired with ETH in contract
-
-        uniswapV2Router.addLiquidityETH{value: address(this).balance}(
-            address(this),
-            tokensToAdd,
-            0,
-            0,
-            owner(),
-            block.timestamp
-        );
-
-        tradable = true;
-    }
-
-    /**
-     * @dev Updates the exchangeLink string with a new value
-     */
-    function updateExchangeLink(string calldata newLink) external onlyOwner {
-        exchangeLink = newLink;
-    }
-
-    /**
-     * @dev Updates the websiteLink string with a new value
-     */
-    function updateWebsiteLink(string calldata newLink) external onlyOwner {
-        websiteLink = newLink;
-    }
-
-    /**
-     * @dev Updates the uniswapV3Pair string with a new value
-     */
-    function updateuniswapV3Pair(address _v3Pair) external onlyOwner {
-        require(_v3Pair != address(0), "Cannot set V3 pair to the zero address");
-        uniswapV3Pair = _v3Pair;
-    }
-
-    /**
-     * @dev Updates the uniswapV4Pair string with a new value
-     */
-    function updateuniswapV4Pair(address _v4Pair) external onlyOwner {
-        require(_v4Pair != address(0), "Cannot set V4 pair to the zero address");
-        uniswapV4Pair = _v4Pair;
-    }
-
-    /**
-     * @dev Removes the max transaction and max wallet restrictions
-     * this cannot be reversed
-     */
-    function removeRestrictions() external onlyOwner {
-        restrictions = false;
-    }
-
-    /**
-     * @dev Withdraws any accident ETH sent to the contract
-     */
-    function withdrawStuckETH() public onlyOwner {
-        bool success;
-        (success, ) = address(msg.sender).call{value: address(this).balance}(
-            ""
-        );
-    }
-
-    /**
-     * @dev Withdraws any remaining tokens in the contract to the owner
-     */
-    function withdrawStuckTokens(address tkn) public onlyOwner {
-        require(IERC20(tkn).balanceOf(address(this)) > 0, "No tokens");
-        uint256 amount = IERC20(tkn).balanceOf(address(this));
-        IERC20(tkn).transfer(msg.sender, amount);
-    }
-
-    /**
-     * @dev Contract stores the address of the automated market maker pair on creatioon of v2 pool
-     */
-    function _setAutomatedMarketMakerPair(address pair, bool value) private {
-        automatedMarketMakerPairs[pair] = value;
-
-        emit SetAutomatedMarketMakerPair(pair, value);
-    }
-
-    function _update(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override(ERC20, ERC20Permit) {
-        if (amount == 0) {
-            super._update(from, to, 0);
-            return;
-        }
-
-        if (
-            from != owner() &&
-            to != owner() &&
-            to != address(0) &&
-            to != deadAddress
-        ) {
-            if (!tradable) {
-                require(
-                    from == owner() ||
-                        from == address(this) ||
-                        from == deadAddress ||
-                        to == owner() ||
-                        to == address(this),
-                    "ERC20: Token Trading Not Enabled. Be Patient Anon."
-                );
-            }
-
-            //when buy
-            if (automatedMarketMakerPairs[from]) {
-                if (
-                    to != owner() &&
-                    to != address(this) &&
-                    to != deadAddress &&
-                    to != address(uniswapV2Router) &&
-                    to != address(uniswapV3Router) &&
-                    to != address(uniswapV4PoolManager) &&
-                    to != address(uniswapV2Pair) &&
-                    to != address(uniswapV3Pair) &&
-                    to != address(uniswapV4Pair)
-                ) {
-                    if (restrictions) {
-                        require(
-                            amount <= restrictMaxTransaction,
-                            "ERC20: Max Transaction Exceeded"
-                        );
-                        require(
-                            amount + balanceOf(to) <= restrictMaxWallet,
-                            "ERC20: Max Wallet Exceeded"
-                        );
-                    }
-                }
-            }
-            //when sell
-            else if (automatedMarketMakerPairs[to]) {
-                if (
-                    from != owner() &&
-                    from != address(this) &&
-                    from != deadAddress &&
-                    from != address(uniswapV2Router) &&
-                    from != address(uniswapV3Router) &&
-                    from != address(uniswapV4PoolManager) &&
-                    from != address(uniswapV2Pair) &&
-                    from != address(uniswapV3Pair) &&
-                    from != address(uniswapV4Pair)
-                ) {
-                    if (restrictions) {
-                        require(
-                            amount <= restrictMaxTransaction,
-                            "ERC20: Max Transaction Exceeded"
-                        );
-                    }
-                }
-            } else if (
-                to != owner() &&
-                to != address(this) &&
-                to != deadAddress &&
-                to != address(uniswapV2Router) &&
-                to != address(uniswapV3Router) &&
-                to != address(uniswapV4PoolManager) &&
-                to != address(uniswapV2Pair) &&
-                to != address(uniswapV3Pair) &&
-                to != address(uniswapV4Pair)
-            ) {
-                if (restrictions) {
-                    require(
-                        amount + balanceOf(to) <= restrictMaxWallet,
-                        "ERC20: Max Wallet Exceeded"
-                    );
-                }
-            }
-        }
-
-        super._update(from, to, amount);
-    }
-}
-
-// OpenZeppelin Contracts v5.0.2 (utils/Context.sol)
 abstract contract Context {
     function _msgSender() internal view virtual returns (address) {
         return msg.sender;
@@ -591,6 +346,8 @@ library Strings {
 }
 
 // OpenZeppelin Contracts v5.0.2 (utils/ShortStrings.sol)
+type ShortString is bytes32;
+
 library ShortStrings {
     bytes32 private constant FALLBACK_SENTINEL =
         0x00000000000000000000000000000000000000000000000000000000000000FF;
@@ -859,62 +616,6 @@ interface IERC20Permit {
 }
 
 // OpenZeppelin Contracts v5.0.2 (token/ERC20/extensions/ERC20Permit.sol)
-abstract contract ERC20Permit is ERC20, IERC20Permit, EIP712, Nonces {
-    bytes32 private constant PERMIT_TYPEHASH =
-        keccak256(
-            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-        );
-
-    error ERC2612ExpiredSignature(uint256 deadline);
-    error ERC2612InvalidSigner(address signer, address owner);
-
-    constructor(string memory name) EIP712(name, "1") {}
-
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public virtual {
-        if (block.timestamp > deadline) {
-            revert ERC2612ExpiredSignature(deadline);
-        }
-
-        bytes32 structHash = keccak256(
-            abi.encode(
-                PERMIT_TYPEHASH,
-                owner,
-                spender,
-                value,
-                _useNonce(owner),
-                deadline
-            )
-        );
-
-        bytes32 hash = _hashTypedDataV4(structHash);
-
-        address signer = ECDSA.recover(hash, v, r, s);
-        if (signer != owner) {
-            revert ERC2612InvalidSigner(signer, owner);
-        }
-
-        _approve(owner, spender, value);
-    }
-
-    function nonces(
-        address owner
-    ) public view virtual override(IERC20Permit, Nonces) returns (uint256) {
-        return super.nonces(owner);
-    }
-
-    function DOMAIN_SEPARATOR() external view virtual returns (bytes32) {
-        return _domainSeparatorV4();
-    }
-}
-
 // OpenZeppelin Contracts v5.0.2 (token/ERC20/IERC20.sol)
 interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -1116,6 +817,62 @@ abstract contract ERC20 is Context, IERC20, IERC20Metadata {
                 _approve(owner, spender, currentAllowance - value, false);
             }
         }
+    }
+}
+
+abstract contract ERC20Permit is ERC20, IERC20Permit, EIP712, Nonces {
+    bytes32 private constant PERMIT_TYPEHASH =
+        keccak256(
+            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+        );
+
+    error ERC2612ExpiredSignature(uint256 deadline);
+    error ERC2612InvalidSigner(address signer, address owner);
+
+    constructor(string memory name) EIP712(name, "1") {}
+
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public virtual {
+        if (block.timestamp > deadline) {
+            revert ERC2612ExpiredSignature(deadline);
+        }
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                PERMIT_TYPEHASH,
+                owner,
+                spender,
+                value,
+                _useNonce(owner),
+                deadline
+            )
+        );
+
+        bytes32 hash = _hashTypedDataV4(structHash);
+
+        address signer = ECDSA.recover(hash, v, r, s);
+        if (signer != owner) {
+            revert ERC2612InvalidSigner(signer, owner);
+        }
+
+        _approve(owner, spender, value);
+    }
+
+    function nonces(
+        address owner
+    ) public view virtual override(IERC20Permit, Nonces) returns (uint256) {
+        return super.nonces(owner);
+    }
+
+    function DOMAIN_SEPARATOR() external view virtual returns (bytes32) {
+        return _domainSeparatorV4();
     }
 }
 
@@ -1350,4 +1107,247 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
 
 interface ISwapRouter is IUniswapV2Router02 {
     // Uniswap V3 specific functions can be added here if needed
+}
+contract SwampCash is ERC20, Ownable, ERC20Permit {
+    IUniswapV2Router02 public immutable uniswapV2Router;
+    ISwapRouter public immutable uniswapV3Router;
+    address public immutable uniswapV4PoolManager;
+    address public uniswapV2Pair;
+    address public uniswapV3Pair;
+    address public uniswapV4Pair;
+    address public constant deadAddress = address(0x000000000000000000000000000000000000dEaD);
+
+    string public exchangeLink = "https://app.uniswap.org/swap";
+    string public websiteLink = "https://swamp.cash";
+
+    bool public tradable = false;
+
+    bool public restrictions = true;
+    uint256 public restrictMaxTransaction;
+    uint256 public restrictMaxWallet;
+
+    mapping(address => bool) private automatedMarketMakerPairs;
+
+    event SetAutomatedMarketMakerPair(address indexed pair, bool indexed value);
+
+    constructor()
+        ERC20("Swamp Cash", "CASH")
+        Ownable(msg.sender)
+        ERC20Permit("Swamp Cash")
+    {
+        uniswapV2Router = IUniswapV2Router02(
+            0x0D97Dc33264bfC1c226207428A79b26757fb9dc3
+        );
+        uniswapV3Router = ISwapRouter(0x0D97Dc33264bfC1c226207428A79b26757fb9dc3);
+        uniswapV4PoolManager = 0x0D97Dc33264bfC1c226207428A79b26757fb9dc3;
+        _approve(address(this), address(uniswapV2Router), type(uint256).max);
+        _approve(address(this), address(uniswapV3Router), type(uint256).max);
+        _approve(address(this), address(uniswapV4PoolManager), type(uint256).max);
+
+        uint256 totalSupply = 100_000_000 ether;
+
+        restrictMaxTransaction = totalSupply / 1000; // 0.1% of total supply (100,000 tokens)
+        restrictMaxWallet = totalSupply / 50; // 2% of total supply (2,000,000 tokens)
+
+        _mint(address(this), totalSupply);
+
+        uniswapV2Pair = IUniswapV2Factory(uniswapV2Router.factory()).createPair(
+            address(this),
+            uniswapV2Router.WETH()
+        );
+        _approve(address(this), address(uniswapV2Pair), type(uint256).max);
+        IERC20(uniswapV2Pair).approve(
+            address(uniswapV2Router),
+            type(uint256).max
+        );
+
+        _setAutomatedMarketMakerPair(address(uniswapV2Pair), true);
+    }
+
+    receive() external payable {}
+
+    /**
+     * @dev Enables trading, creates a uniswap pair and adds liquidity using the tokens in the contract.
+     *
+     * sets tradable to true, it can never be set to false after that
+     * stores uniswap pair address in uniswapV2Pair
+     */
+    function enableTrading() external onlyOwner {
+        require(!tradable, "Trading already enabled.");
+
+        uint256 tokensInWallet = balanceOf(address(this));
+        uint256 tokensToAdd = (tokensInWallet * 100) / 100; // 100% of tokens in contract go to Liquidity Pool to be paired with ETH in contract
+
+        uniswapV2Router.addLiquidityETH{value: address(this).balance}(
+            address(this),
+            tokensToAdd,
+            0,
+            0,
+            owner(),
+            block.timestamp
+        );
+
+        tradable = true;
+    }
+
+    /**
+     * @dev Updates the exchangeLink string with a new value
+     */
+    function updateExchangeLink(string calldata newLink) external onlyOwner {
+        exchangeLink = newLink;
+    }
+
+    /**
+     * @dev Updates the websiteLink string with a new value
+     */
+    function updateWebsiteLink(string calldata newLink) external onlyOwner {
+        websiteLink = newLink;
+    }
+
+    /**
+     * @dev Updates the uniswapV3Pair string with a new value
+     */
+    function updateuniswapV3Pair(address _v3Pair) external onlyOwner {
+        require(_v3Pair != address(0), "Cannot set V3 pair to the zero address");
+        uniswapV3Pair = _v3Pair;
+    }
+
+    /**
+     * @dev Updates the uniswapV4Pair string with a new value
+     */
+    function updateuniswapV4Pair(address _v4Pair) external onlyOwner {
+        require(_v4Pair != address(0), "Cannot set V4 pair to the zero address");
+        uniswapV4Pair = _v4Pair;
+    }
+
+    /**
+     * @dev Removes the max transaction and max wallet restrictions
+     * this cannot be reversed
+     */
+    function removeRestrictions() external onlyOwner {
+        restrictions = false;
+    }
+
+    /**
+     * @dev Withdraws any accident ETH sent to the contract
+     */
+    function withdrawStuckETH() public onlyOwner {
+        bool success;
+        (success, ) = address(msg.sender).call{value: address(this).balance}(
+            ""
+        );
+    }
+
+    /**
+     * @dev Withdraws any remaining tokens in the contract to the owner
+     */
+    function withdrawStuckTokens(address tkn) public onlyOwner {
+        require(IERC20(tkn).balanceOf(address(this)) > 0, "No tokens");
+        uint256 amount = IERC20(tkn).balanceOf(address(this));
+        IERC20(tkn).transfer(msg.sender, amount);
+    }
+
+    /**
+     * @dev Contract stores the address of the automated market maker pair on creatioon of v2 pool
+     */
+    function _setAutomatedMarketMakerPair(address pair, bool value) private {
+        automatedMarketMakerPairs[pair] = value;
+
+        emit SetAutomatedMarketMakerPair(pair, value);
+    }
+
+    function _update(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override(ERC20) {
+        if (amount == 0) {
+            super._update(from, to, 0);
+            return;
+        }
+
+        if (
+            from != owner() &&
+            to != owner() &&
+            to != address(0) &&
+            to != deadAddress
+        ) {
+            if (!tradable) {
+                require(
+                    from == owner() ||
+                        from == address(this) ||
+                        from == deadAddress ||
+                        to == owner() ||
+                        to == address(this),
+                    "ERC20: Token Trading Not Enabled. Be Patient Anon."
+                );
+            }
+
+            //when buy
+            if (automatedMarketMakerPairs[from]) {
+                if (
+                    to != owner() &&
+                    to != address(this) &&
+                    to != deadAddress &&
+                    to != address(uniswapV2Router) &&
+                    to != address(uniswapV3Router) &&
+                    to != address(uniswapV4PoolManager) &&
+                    to != address(uniswapV2Pair) &&
+                    to != address(uniswapV3Pair) &&
+                    to != address(uniswapV4Pair)
+                ) {
+                    if (restrictions) {
+                        require(
+                            amount <= restrictMaxTransaction,
+                            "ERC20: Max Transaction Exceeded"
+                        );
+                        require(
+                            amount + balanceOf(to) <= restrictMaxWallet,
+                            "ERC20: Max Wallet Exceeded"
+                        );
+                    }
+                }
+            }
+            //when sell
+            else if (automatedMarketMakerPairs[to]) {
+                if (
+                    from != owner() &&
+                    from != address(this) &&
+                    from != deadAddress &&
+                    from != address(uniswapV2Router) &&
+                    from != address(uniswapV3Router) &&
+                    from != address(uniswapV4PoolManager) &&
+                    from != address(uniswapV2Pair) &&
+                    from != address(uniswapV3Pair) &&
+                    from != address(uniswapV4Pair)
+                ) {
+                    if (restrictions) {
+                        require(
+                            amount <= restrictMaxTransaction,
+                            "ERC20: Max Transaction Exceeded"
+                        );
+                    }
+                }
+            } else if (
+                to != owner() &&
+                to != address(this) &&
+                to != deadAddress &&
+                to != address(uniswapV2Router) &&
+                to != address(uniswapV3Router) &&
+                to != address(uniswapV4PoolManager) &&
+                to != address(uniswapV2Pair) &&
+                to != address(uniswapV3Pair) &&
+                to != address(uniswapV4Pair)
+            ) {
+                if (restrictions) {
+                    require(
+                        amount + balanceOf(to) <= restrictMaxWallet,
+                        "ERC20: Max Wallet Exceeded"
+                    );
+                }
+            }
+        }
+
+        super._update(from, to, amount);
+    }
 }

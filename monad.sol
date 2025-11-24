@@ -41,7 +41,7 @@ contract Cash is ERC20, Ownable, ERC20Permit {
         ERC20Permit("Swamp Cash")
     {
         uniswapV2Router = IUniswapV2Router02(
-            0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24
+            0x4b2ab38dbf28d31d467aa8993f6c2585981d6804
         );
         uniswapV3Router = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
         uniswapV4PoolManager = 0x000000000004444c5dc75cB358380D2e3dE08A90;

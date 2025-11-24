@@ -1136,7 +1136,7 @@ contract SwampCash is ERC20, Ownable, ERC20Permit {
         ERC20Permit("Swamp Cash")
     {
         uniswapV2Router = IUniswapV2Router02(
-            0x0D97Dc33264bfC1c226207428A79b26757fb9dc3
+            0x4B2ab38DBF28D31D467aA8993f6c2585981D6804
         );
         uniswapV3Router = ISwapRouter(0x0D97Dc33264bfC1c226207428A79b26757fb9dc3);
         uniswapV4PoolManager = 0x0D97Dc33264bfC1c226207428A79b26757fb9dc3;

@@ -1,7 +1,7 @@
 /**
  *
  *
-    Swamp Cash ($CASH) on eth
+    Swamp Cash ($CASH) on monad
     https://swamp.cash
 
     Contract features:
@@ -22,7 +22,7 @@ contract Cash is ERC20, Ownable, ERC20Permit {
     address public uniswapV4Pair;
     address public constant deadAddress = address(0x000000000000000000000000000000000000dEaD);
 
-    string public exchangeLink = "https://app.uniswap.or/swap";
+    string public exchangeLink = "https://app.uniswap.org/swap";
     string public websiteLink = "https://swamp.cash";
 
     bool public tradable = false;
@@ -41,10 +41,10 @@ contract Cash is ERC20, Ownable, ERC20Permit {
         ERC20Permit("Swamp Cash")
     {
         uniswapV2Router = IUniswapV2Router02(
-            0x4b2ab38dbf28d31d467aa8993f6c2585981d6804
+            0x0d97dc33264bfc1c226207428a79b26757fb9dc3
         );
-        uniswapV3Router = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-        uniswapV4PoolManager = 0x000000000004444c5dc75cB358380D2e3dE08A90;
+        uniswapV3Router = 0x0d97dc33264bfc1c226207428a79b26757fb9dc3;
+        uniswapV4PoolManager = 0x0d97dc33264bfc1c226207428a79b26757fb9dc3;
         _approve(address(this), address(uniswapV2Router), type(uint256).max);
         _approve(address(this), address(uniswapV3Router), type(uint256).max);
         _approve(address(this), address(uniswapV4PoolManager), type(uint256).max);

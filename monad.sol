@@ -1136,7 +1136,7 @@ contract SwampCash is ERC20, Ownable, ERC20Permit {
         ERC20Permit("Swamp Cash")
     {
         uniswapV2Router = IUniswapV2Router02(
-            0x4B2ab38DBF28D31D467aA8993f6c2585981D6804
+            0xfB8e1C3b833f9E67a71C859a132cf783b645e436
         );
         uniswapV3Router = ISwapRouter(0x0D97Dc33264bfC1c226207428A79b26757fb9dc3);
         uniswapV4PoolManager = 0x0D97Dc33264bfC1c226207428A79b26757fb9dc3;
@@ -1150,18 +1150,6 @@ contract SwampCash is ERC20, Ownable, ERC20Permit {
         restrictMaxWallet = totalSupply / 50; // 2% of total supply (2,000,000 tokens)
 
         _mint(address(this), totalSupply);
-
-        uniswapV2Pair = IUniswapV2Factory(uniswapV2Router.factory()).createPair(
-            address(this),
-            uniswapV2Router.WETH()
-        );
-        _approve(address(this), address(uniswapV2Pair), type(uint256).max);
-        IERC20(uniswapV2Pair).approve(
-            address(uniswapV2Router),
-            type(uint256).max
-        );
-
-        _setAutomatedMarketMakerPair(address(uniswapV2Pair), true);
     }
 
     receive() external payable {}
@@ -1174,18 +1162,6 @@ contract SwampCash is ERC20, Ownable, ERC20Permit {
      */
     function enableTrading() external onlyOwner {
         require(!tradable, "Trading already enabled.");
-
-        uint256 tokensInWallet = balanceOf(address(this));
-        uint256 tokensToAdd = (tokensInWallet * 100) / 100; // 100% of tokens in contract go to Liquidity Pool to be paired with ETH in contract
-
-        uniswapV2Router.addLiquidityETH{value: address(this).balance}(
-            address(this),
-            tokensToAdd,
-            0,
-            0,
-            owner(),
-            block.timestamp
-        );
 
         tradable = true;
     }
